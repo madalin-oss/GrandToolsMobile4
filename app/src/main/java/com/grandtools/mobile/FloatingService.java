@@ -1,0 +1,114 @@
+package com.grandtools.mobile;
+
+import android.app.*;
+import android.content.*;
+import android.graphics.PixelFormat;
+import android.os.*;
+import android.view.*;
+import android.widget.*;
+
+public class FloatingService extends Service {
+
+    WindowManager wm;
+    View panel;
+    WindowManager.LayoutParams params;
+
+    @Override
+    public IBinder onBind(Intent i) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int id) {
+        if (panel != null) return START_STICKY;
+
+        wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+        LinearLayout box = Ui.column(this);
+        box.setBackground(Ui.shape(Ui.CARD, 24));
+
+        box.addView(Ui.text(this, "◈ GRAND TOOLS (перетащите)", 16));
+
+        for (int i = 0; i < 4; i++) {
+            final int k = i;
+
+            Button b = Ui.button(this, Ui.names[i]);
+            box.addView(b);
+
+            b.setOnClickListener(v -> {
+                android.content.ClipboardManager cb =
+                    (android.content.ClipboardManager)
+                    getSystemService(CLIPBOARD_SERVICE);
+
+                cb.setPrimaryClip(
+                    ClipData.newPlainText(
+                        "command",
+                        Ui.command(this, k)
+                    )
+                );
+
+                Toast.makeText(
+                    this,
+                    "Скопировано — вставьте в чат",
+                    Toast.LENGTH_SHORT
+                ).show();
+            });
+        }
+
+        Button close = Ui.button(this, "✕ Закрыть");
+        box.addView(close);
+        close.setOnClickListener(v -> stopSelf());
+
+        params = new WindowManager.LayoutParams(
+            270,
+            -2,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        );
+
+        params.gravity = Gravity.TOP | Gravity.START;
+        params.x = 30;
+        params.y = 150;
+
+        box.getChildAt(0).setOnTouchListener(
+            new View.OnTouchListener() {
+                int x, y;
+                float sx, sy;
+
+                public boolean onTouch(View v, MotionEvent e) {
+                    if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                        x = params.x;
+                        y = params.y;
+                        sx = e.getRawX();
+                        sy = e.getRawY();
+                        return true;
+                    }
+
+                    if (e.getAction() == MotionEvent.ACTION_MOVE) {
+                        params.x = x + (int) (e.getRawX() - sx);
+                        params.y = y + (int) (e.getRawY() - sy);
+                        wm.updateViewLayout(panel, params);
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+        );
+
+        panel = box;
+        wm.addView(panel, params);
+
+        return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        if (panel != null) {
+            wm.removeView(panel);
+            panel = null;
+        }
+        super.onDestroy();
+    }
+}
