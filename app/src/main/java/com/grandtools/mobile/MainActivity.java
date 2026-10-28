@@ -23,3 +23,111 @@ public class MainActivity extends Activity {
 
     @Override
     public void onCreate(Bundle b) {
+        super.onCreate(b);
+
+        root = Ui.column(this);
+
+        ScrollView sc = new ScrollView(this);
+        sc.addView(root);
+        setContentView(sc);
+
+        root.addView(Ui.text(
+            this, "GRAND TOOLS ◈ MOBILE", 26
+        ));
+
+        root.addView(Ui.text(
+            this, "Быстрые команды • Клавиатура • Оверлей", 15
+        ));
+
+        row("⌨ Включить клавиатуру", () -> {
+            startActivity(new Intent(
+                Settings.ACTION_INPUT_METHOD_SETTINGS
+            ));
+        });
+
+        row("⌨ Выбрать клавиатуру", () -> {
+            InputMethodManager m =
+                (InputMethodManager) getSystemService(
+                    INPUT_METHOD_SERVICE
+                );
+            m.showInputMethodPicker();
+        });
+
+        row("◈ Разрешить плавающее окно", () -> {
+            if (!Settings.canDrawOverlays(this)) {
+                startActivity(new Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse(
+                        "package:" + getPackageName()
+                    )
+                ));
+            } else {
+                Toast.makeText(
+                    this,
+                    "Разрешение уже есть",
+                    Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
+
+        row("▶ Показать плавающее окно", () -> {
+            if (Settings.canDrawOverlays(this)) {
+                startService(new Intent(
+                    this, FloatingService.class
+                ));
+            } else {
+                Toast.makeText(
+                    this,
+                    "Сначала разрешите показ поверх окон",
+                    Toast.LENGTH_LONG
+                ).show();
+            }
+        });
+
+        row("■ Скрыть плавающее окно", () -> {
+            stopService(new Intent(
+                this, FloatingService.class
+            ));
+        });
+
+        root.addView(Ui.text(
+            this,
+            "МОИ КОМАНДЫ — нажмите для изменения",
+            18
+        ));
+
+        for (int i = 0; i < Ui.names.length; i++) {
+            final int k = i;
+
+            row(Ui.names[i] + " ✎", () -> edit(k));
+        }
+
+        root.addView(Ui.text(
+            this,
+            "Команды вставляются в активное поле ввода. " +
+            "Плавающее окно копирует текст в буфер обмена.",
+            13
+        ));
+    }
+
+    void edit(int i) {
+        EditText e = new EditText(this);
+        e.setSingleLine(false);
+        e.setText(Ui.command(this, i));
+
+        new AlertDialog.Builder(this)
+            .setTitle(Ui.names[i])
+            .setView(e)
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Сохранить", (d, w) -> {
+                getSharedPreferences("commands", 0)
+                    .edit()
+                    .putString(
+                        "c" + i,
+                        e.getText().toString()
+                    )
+                    .apply();
+            })
+            .show();
+    }
+}
