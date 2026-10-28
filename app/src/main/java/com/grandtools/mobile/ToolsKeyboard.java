@@ -1,9 +1,10 @@
 package com.grandtools.mobile;
 
 import android.inputmethodservice.InputMethodService;
-import android.view.*;
+import android.view.View;
 import android.view.inputmethod.InputConnection;
-import android.widget.*;
+import android.widget.Button;
+import android.widget.LinearLayout;
 
 public class ToolsKeyboard extends InputMethodService {
 
@@ -19,3 +20,6 @@ public class ToolsKeyboard extends InputMethodService {
         row.addView(b, p);
 
         b.setOnClickListener(v -> {
+            InputConnection ic = getCurrentInputConnection();
+
+            if (ic == null) return
